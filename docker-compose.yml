@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+
+  main-postgres:
+    image: postgres:9.6
+    ports:
+      - "9001:5432"
+    environment:
+      - POSTGRES_PASSWORD=p@ssw0rd
+      - POSTGRES_DB=cargo_registry
+
+  test-postgres:
+    image: postgres:9.6
+    ports:
+      - "9002:5432"
+    environment:
+      - POSTGRES_PASSWORD=p@ssw0rd
+      - POSTGRES_DB=cargo_registry_test
+
+  backend:
+    command: cargo run --bin server
+    build:
+      context: .
+      dockerfile: Dockerfile-backend
+    volumes:
+      - .:/crates.io
+    working_dir: /crates.io
+    links:
+      - main-postgres
+      - test-postgres
+    environment:
+      - CARGO_TARGET_DIR=/crates-build/target
+      - SESSION_KEY=badkeyabcdefghijklmnopqrstuvwxyzabcdef
+      - DATABASE_URL=postgres://postgres:p@ssw0rd@main-postgres:9001/cargo_registry
+      - TEST_DATABASE_URL=postgres://postgres:p@ssw0rd@test-postgres:9002/cargo_registry_test
+
+  frontend:
+    command: yarn run start:local
+    build:
+      context: .
+      dockerfile: Dockerfile-frontend
+    volumes:
+      - .:/crates.io
+    working_dir: /crates.io
+    environment:
+      - npm_config_global=true
+      - SESSION_KEY=badkeyabcdefghijklmnopqrstuvwxyzabcdef

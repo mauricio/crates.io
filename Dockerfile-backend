@@ -1,0 +1,12 @@
+FROM rust:1.19
+
+ENV CARGO_TARGET_DIR /crates-build/target
+
+WORKDIR /crates-build
+
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+
+RUN apt-get update && apt-get install git libpq-dev cmake -y
+RUN cargo check --verbose
+RUN cargo install --verbose diesel_cli --no-default-features --features postgres
